@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.*
 import android.util.Log
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
@@ -51,7 +52,7 @@ class SecureIpcViewModel(application: Application) : AndroidViewModel(applicatio
                         val m = Message.obtain(null, MSG_SEND_ENCRYPTED_AES_KEY)
                         val b = Bundle()
                         b.putByteArray("encrypted_aes", encryptedAES)
-                        m.setData(b) // ✅ CORRECT
+                        m.setData(b)
                         m.replyTo = replyMessenger
                         serviceMessenger?.send(m)
                     }
@@ -84,14 +85,19 @@ class SecureIpcViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun sendSecureMessage(text: String) {
-        CoroutineScope(Dispatchers.Default).launch {
-            val encrypted = crypto.aesEncrypt(rawAES, text)
-            val msg = Message.obtain(null, MSG_SEND_SECURE_DATA)
-            val b = Bundle()
-            b.putByteArray("secure_data", encrypted)
-            msg.setData(b) // ✅ CORRECT
-            msg.replyTo = replyMessenger
-            serviceMessenger?.send(msg)
+        serviceMessenger?.let {
+            CoroutineScope(Dispatchers.Default).launch {
+                val encrypted = crypto.aesEncrypt(rawAES, text)
+                val msg = Message.obtain(null, MSG_SEND_SECURE_DATA)
+                val b = Bundle()
+                b.putByteArray("secure_data", encrypted)
+                msg.setData(b)
+                msg.replyTo = replyMessenger
+                serviceMessenger?.send(msg)
+            }
+        } ?: run {
+            Toast.makeText(getApplication(), "Could not connect to Secure Service.", Toast.LENGTH_LONG).show()
+            Log.e("SecureIpcVM", "❌ Service not bound")
         }
     }
 
@@ -105,7 +111,7 @@ class SecureIpcViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            Log.d("SecureIpcVM", "⚠️ Service disconnected: $name")
+            Log.d("SecureIpcVM", "Service disconnected: $name")
             serviceMessenger = null
         }
     }

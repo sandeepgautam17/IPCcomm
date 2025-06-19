@@ -33,7 +33,7 @@ class SecureService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d("SecureService", "✅ onCreate")
+        Log.d("SecureService", "onCreate")
 
         crypto.generateRSAKeyIfNeeded()
         createNotificationChannel()
@@ -51,7 +51,7 @@ class SecureService : Service() {
     private inner class IncomingHandler : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             val dataBundle = msg.data
-            dataBundle.classLoader = javaClass.classLoader // ✅ fix Bundle deserialization
+            dataBundle.classLoader = javaClass.classLoader
 
             when (msg.what) {
                 MSG_REQUEST_PUBLIC_KEY -> {
@@ -141,7 +141,8 @@ class SecureService : Service() {
     }
 
     override fun onDestroy() {
+        stopForeground(true)
         super.onDestroy()
-        Log.d("SecureService", "✅ onDestroy")
+        Log.d("SecureService", "onDestroy")
     }
 }
