@@ -15,6 +15,8 @@ import com.example.shared.CryptoHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class SecureIpcViewModel(application: Application) : AndroidViewModel(application) {
@@ -31,8 +33,8 @@ class SecureIpcViewModel(application: Application) : AndroidViewModel(applicatio
     private var serviceMessenger: Messenger? = null
     private val rawAES = ByteArray(16)  // Will store the AES key for this session
 
-    private val _response = MutableLiveData<String>()
-    val response: LiveData<String> = _response
+    private val _responses = MutableStateFlow<List<String>>(emptyList())
+    val responses = _responses.asStateFlow()
 
     private lateinit var replyMessenger: Messenger
 
@@ -60,7 +62,7 @@ class SecureIpcViewModel(application: Application) : AndroidViewModel(applicatio
                     CoroutineScope(Dispatchers.Default).launch {
                         val plain = crypto.aesDecrypt(rawAES, encrypted)
                         Log.d("SecureIpcVM", "✅ Decrypted response: $plain")
-                        _response.postValue(plain)
+                        _responses.value = _responses.value + plain
                     }
                 }
             }

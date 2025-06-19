@@ -47,6 +47,7 @@ class SecureService : Service() {
         return messenger.binder
     }
 
+    private var fallbackReplyMessenger: Messenger? = null
     private inner class IncomingHandler : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             val dataBundle = msg.data
@@ -54,6 +55,7 @@ class SecureService : Service() {
 
             when (msg.what) {
                 MSG_REQUEST_PUBLIC_KEY -> {
+                    fallbackReplyMessenger = msg.replyTo
                     val publicKeyBytes = crypto.getRSAPublicKey().encoded
                     val reply = Message.obtain(null, MSG_REPLY_PUBLIC_KEY)
                     val b = Bundle()
@@ -64,6 +66,7 @@ class SecureService : Service() {
                 }
 
                 MSG_SEND_ENCRYPTED_AES_KEY -> {
+                    fallbackReplyMessenger = msg.replyTo
                     CoroutineScope(Dispatchers.Default).launch {
                         val encryptedAES = dataBundle.getByteArray("encrypted_aes")
                         if (encryptedAES == null) {
@@ -96,12 +99,19 @@ class SecureService : Service() {
                             val plain = crypto.aesDecrypt(aesKey, encryptedData)
                             Log.d("SecureService", "✅ Decrypted text: $plain")
 
-                            val encryptedResponse = crypto.aesEncrypt(aesKey, "Service received: $plain")
+                            val encryptedResponse = crypto.aesEncrypt(aesKey, "Processed message: $plain")
                             val reply = Message.obtain(null, MSG_SECURE_RESPONSE)
                             val b = Bundle()
                             b.putByteArray("secure_response", encryptedResponse)
                             reply.setData(b)
-                            msg.replyTo.send(reply)
+                            val safeReply = msg.replyTo ?: fallbackReplyMessenger
+                            if (safeReply != null) {
+                                safeReply.send(reply)
+                                Log.d("SecureService", "✅ Sent encrypted response using safeReply")
+                            } else {
+                                Log.e("SecureService", "❌ No replyTo or fallback available for what=${msg.what}")
+                            }
+                            //msg.replyTo.send(reply)
                             Log.d("SecureService", "✅ Sent encrypted response")
                         } catch (e: Exception) {
                             Log.e("SecureService", "❌ Failed to decrypt/process data: ${e.message}")
