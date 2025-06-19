@@ -6,14 +6,14 @@ This project demonstrates **secure App-to-App IPC** on Android using:
 - **RSA public/private key exchange** for hybrid encryption.
 - **AES session key** for encrypting user data.
 - **Foreground Service** for modern Android restrictions.
-- **Multi-module structure**: `comm` (Client app), `service_app` (Service app), `shared` (common crypto).
+- **Multi-module structure**: `app` (Client app), `service_app` (Service app), `shared` (common crypto).
 
 ---
 
 ## **Modules**
 `:shared`     | Contains `CryptoHelper` — all crypto code.
 `:service_app` | Runs the secure `SecureService` with RSA & AES logic.
-`:comm`       | The client app. Binds to `SecureService`, exchanges keys, sends secure text.
+`:app`       | The client app. Binds to `SecureService`, exchanges keys, sends secure text.
 
 ---
 
@@ -39,7 +39,7 @@ This project demonstrates **secure App-to-App IPC** on Android using:
 ## ✅ **How to run**
 
 ### 1️ **Build both apps**
-- `:comm` — the **Client**
+- `:app` — the **Client**
 - `:service_app` — the **Service**
 
 You can run them as separate configurations or build APKs.
@@ -78,3 +78,7 @@ Uses `CoroutineScope` for heavy crypto off the UI thread.
 ---
 
 ## **Build & Test**
+
+## **Detailed Design**
+For full architecture & sequence diagram, see [DESIGN.md](./DESIGN.md)
+
